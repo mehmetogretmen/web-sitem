@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eğlenceli Sınıf Sayacı - Mehmet Öğretmen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Fredoka', cursive, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8edd8 0%, #fed6e3 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            border: 4px solid #ffffff;
+        }
+
+        h1 {
+            color: #5b6b7c;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        p.subtitle {
+            color: #7d8b99;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+
+        .timer-display {
+            background: #ffffff;
+            border-radius: 25px;
+            padding: 25px;
+            font-size: 5rem;
+            font-weight: 700;
+            color: #4a5568;
+            box-shadow: inset 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            border: 3px solid #edf2f7;
+            transition: all 0.3s ease;
+        }
+
+        .timer-display.danger {
+            color: #e53e3e;
+            animation: pulse 1s infinite;
+            border-color: #feb2b2;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
+
+        .adjust-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .btn-adjust {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        }
+
+        .btn-adjust:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-adjust:active {
+            transform: translateY(1px);
+        }
+
+        .main-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .btn-main {
+            border: none;
+            padding: 15px 35px;
+            border-radius: 20px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-start {
+            background: #68d391;
+        }
+
+        .btn-start:hover {
+            background: #48bb78;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 20px rgba(72,187,120,0.3);
+        }
+
+        .btn-pause {
+            background: #f6ad55;
+        }
+
+        .btn-pause:hover {
+            background: #ed8936;
+            transform: translateY(-3px);
+        }
+
+        .btn-reset {
+            background: #fc8181;
+        }
+
+        .btn-reset:hover {
+            background: #f56565;
+            transform: translateY(-3px);
+        }
+
+        .home-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: #718096;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+
+        .home-link:hover {
+            color: #2d3748;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>⏱️ Sınıf Sayacı</h1>
+        <p class="subtitle">Mehmet Öğretmen ile Etkinlik Zamanı!</p>
+
+        <div class="timer-display" id="display">03:00</div>
+
+        <div class="adjust-buttons">
+            <button class="btn-adjust" onclick="changeTime(60)">+1 Dk</button>
+            <button class="btn-adjust" onclick="changeTime(-60)">-1 Dk</button>
+            <button class="btn-adjust" onclick="changeTime(10)">+10 Sn</button>
+            <button class="btn-adjust" onclick="changeTime(-10)">-10 Sn</button>
+        </div>
+
+        <div class="main-controls">
+            <button class="btn-main btn-start" id="startBtn" onclick="toggleTimer()">Başlat</button>
+            <button class="btn-main btn-reset" onclick="resetTimer()">Sıfırla</button>
+        </div>
+
+        <br>
+        <a href="index.html" class="home-link">← Ana Sayfaya Dön</a>
+    </div>
+
+    <script>
+        let totalSeconds = 180;
+        let timerInterval = null;
+        let isRunning = false;
+
+        // Web Audio API ile tatlı bipleme sesleri
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playBeep(freq = 520, type = 'sine', duration = 0.15) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playFinishAlarm() {
+            let notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, index) => {
+                setTimeout(() => {
+                    playBeep(freq, 'triangle', 0.3);
+                }, index * 180);
+            });
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            const displayEl = document.getElementById('display');
+            displayEl.textContent = 
+                ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')};
+
+            if (totalSeconds <= 10 && totalSeconds > 0 && isRunning) {
+                displayEl.classList.add('danger');
+            } else {
+                displayEl.classList.remove('danger');
+            }
+        }
+
+        function changeTime(seconds) {
+            if (isRunning) return;
+            playBeep(400, 'sine', 0.08);
+            totalSeconds = Math.max(0, totalSeconds + seconds);
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            const startBtn = document.getElementById('startBtn');
+            playBeep(600, 'sine', 0.1);
+
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                startBtn.textContent = 'Devam Et';
+                startBtn.classList.remove('btn-pause');
+                startBtn.classList.add('btn-start');
+            } else {
+                if (totalSeconds <= 0) return;
+                isRunning = true;
+                startBtn.textContent = 'Durdur';
+                startBtn.classList.remove('btn-start');
+                startBtn.classList.add('btn-pause');
+
+                timerInterval = setInterval(() => {
+                    if (totalSeconds > 0) {
+                        totalSeconds--;
+                        updateDisplay();
+                        if (totalSeconds <= 5 && totalSeconds > 0) {
+                            playBeep(700, 'sine', 0.1);
+                        }
+                    } else {
+                        clearInterval(timerInterval);
+                        isRunning = false;
+                        playFinishAlarm();
+                        startBtn.textContent = 'Başlat';
+                        startBtn.classList.remove('btn-pause');
+                        startBtn.classList.add('btn-start');
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            playBeep(300, 'sine', 0.1);
+            clearInterval(timerInterval);
+            isRunning = false;
+            totalSeconds = 180;
+            const startBtn = document.getElementById('startBtn');
+            startBtn.textContent = 'Başlat';
+            startBtn.classList.remove('btn-pause');
+            startBtn.classList.add('btn-start');
+            updateDisplay();
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
